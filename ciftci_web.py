@@ -23,7 +23,7 @@ if st.button("BİLGİLERİ GÖNDER VE SORU SOR"):
                  f"{urun} ekimi ve {sulama} sistemi hakkında bilgi almak istiyorum.")
         
         # BURAYI KENDİ NUMARANLA DEĞİŞTİR (Başına 90 koy, boşluk bırakma)
-        tel = "905XXXXXXXXX" 
+        tel = "905075031990" 
         
         # WhatsApp Linkini oluşturuyoruz
         mesaj_kodlu = urllib.parse.quote(mesaj)
@@ -42,3 +42,4 @@ if st.button("BİLGİLERİ GÖNDER VE SORU SOR"):
             ''', unsafe_allow_html=True)
     else:
         st.error("Lütfen en azından İsim ve İlçe bölümlerini doldurun!")
+
