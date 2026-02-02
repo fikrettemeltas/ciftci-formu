@@ -1,10 +1,3 @@
-Moruk, anlaşıldı; Python'un bazı sürümleri kodun içindeki Türkçe karakterlere (Özellikle ı, ş, ğ gibi) veya görünmez karakterlere takılabiliyor. Bu sefer işi şansa bırakmıyoruz.
-
-Kodun en başına UTF-8 kodlamasını ekledim ve bütün değişkenleri/mesajları en "garanti" karakterlerle güncelledim. Ayrıca hata veren o emojileri ve özel sembolleri tamamen temizledim.
-
-Şu kodu kopyalayıp yeni bir dosya olarak kaydet ve çalıştır, bu sefer o hatadan kurtulacağız:
-
-Python
 # -*- coding: utf-8 -*-
 import tkinter as tk
 from tkinter import filedialog, messagebox
@@ -22,7 +15,10 @@ BITKI_VERILERI = {
 
 def boru_hesapla():
     try:
-        alan = float(entry_alan.get())
+        alan_metin = entry_alan.get()
+        if not alan_metin:
+            return "Alan girilmedi."
+        alan = float(alan_metin)
         urun = var_urun_liste.get()
         v = BITKI_VERILERI[urun]
         sabit_debi = 72 # 20 L/s = 72 m3/h
@@ -37,15 +33,14 @@ def boru_hesapla():
         gunluk_su = alan * v["su_ihtiyac"]
         sure = gunluk_su / sabit_debi
 
-        rapor = (f"--- TEKNIK ANALIZ ---\n"
-                 f"Urun: {urun}\n"
+        rapor = (f"Urun: {urun}\n"
                  f"Ihtiyac: {birim}\n"
                  f"Ana Boru: 110 mm\n"
                  f"Gunluk Su: {gunluk_su:.1f} Ton\n"
-                 f"Sulama Suresi: {sure:.1f} Saat\n")
+                 f"Sure: {sure:.1f} Saat\n")
         return rapor
-    except:
-        return "HATA: Alan bilgisini rakam giriniz."
+    except ValueError:
+        return "HATA: Alan kismina sadece rakam giriniz."
 
 def whatsapp_gonder():
     isim = entry_isim.get()
@@ -54,17 +49,17 @@ def whatsapp_gonder():
     urun = var_urun_liste.get()
     
     if not isim or not ilce or not alan:
-        messagebox.showwarning("Uyari", "Lutfen tum alanlari doldurun!")
+        messagebox.showwarning("Uyari", "Lutfen alanlari doldurun!")
         return
 
     teknik_not = boru_hesapla()
     
-    # Mesaj icerigi
     mesaj = (f"Sayin AHMET FIKRET TEMELTAS,\n\n"
-             f"Ben {isim}. {ilce} bolgesindeki {alan} donum {urun} arazim icin teknik destek istiyorum.\n\n"
+             f"Ben {isim}. {ilce} bolgesindeki {alan} donum {urun} arazim icin destek istiyorum.\n\n"
              f"{teknik_not}\n"
              f"Software Developed by AHMET FIKRET TEMELTAS")
     
+    # Senin numaran
     url = f"https://wa.me/905075031990?text={mesaj}"
     webbrowser.open(url)
 
@@ -76,24 +71,18 @@ def belge_sec(belge_turu):
 # --- ARAYUZ ---
 root = tk.Tk()
 root.title("Ahmet Fikret Temeltas - Sulama Sistemleri")
-root.geometry("450x800")
+root.geometry("450x750")
 
 # BASLIK
 tk.Label(root, text="PROJE GELISTIRICI", font=("Arial", 10, "italic")).pack(pady=5)
-tk.Label(root, text="AHMET FIKRET TEMELTAS", font=("Arial", 14, "bold"), fg="green").pack(pady=5)
+tk.Label(root, text="AHMET FIKRET TEMELTAS", font=("Arial", 14, "bold"), fg="darkgreen").pack(pady=5)
 
-# GIRISLER
+# GIRIS ALANLARI
 tk.Label(root, text="Ciftci Ad Soyad:").pack()
-entry_isim = tk.Entry(root, width=40); entry_isim.pack(pady=2)
+entry_isim = tk.Entry(root, width=35); entry_isim.pack(pady=2)
 
 tk.Label(root, text="Ilce / Koy:").pack()
-entry_ilce = tk.Entry(root, width=40); entry_ilce.pack(pady=2)
-
-tk.Label(root, text="Ada No:").pack()
-entry_ada = tk.Entry(root, width=40); entry_ada.pack(pady=2)
-
-tk.Label(root, text="Parsel No:").pack()
-entry_parsel = tk.Entry(root, width=40); entry_parsel.pack(pady=2)
+entry_ilce = tk.Entry(root, width=35); entry_ilce.pack(pady=2)
 
 tk.Label(root, text="\nUrun Secimi:", font=("Arial", 10, "bold")).pack()
 var_urun_liste = tk.StringVar(root)
@@ -101,24 +90,25 @@ var_urun_liste.set("Misir")
 tk.OptionMenu(root, var_urun_liste, *BITKI_VERILERI.keys()).pack()
 
 tk.Label(root, text="Tarla Alani (Donum):").pack()
-entry_alan = tk.Entry(root, width=20); entry_alan.pack()
+entry_alan = tk.Entry(root, width=15); entry_alan.pack()
 
-# BELGELER
-tk.Label(root, text="\nBELGE YONETIMI", font=("Arial", 10, "bold")).pack()
-btn_f = tk.Frame(root); btn_f.pack()
+# BELGE BUTONLARI
+tk.Label(root, text="\nEVRAK YUKLEME", font=("Arial", 10, "bold")).pack()
+f_btn = tk.Frame(root); f_btn.pack()
 for b in ["CKS", "Ruhsat", "Tapu"]:
-    tk.Button(btn_f, text=b, width=10, command=lambda x=b: belge_sec(x)).pack(side=tk.LEFT, padx=2)
+    tk.Button(f_btn, text=b, width=8, command=lambda x=b: belge_sec(x)).pack(side=tk.LEFT, padx=2)
 
-# BUTONLAR
-tk.Button(root, text="TEKNIK RAPORU GOSTER", bg="orange", fg="white", 
-          command=lambda: messagebox.showinfo("Rapor", boru_hesapla())).pack(pady=20)
+# ISLEM BUTONLARI
+tk.Button(root, text="TEKNIK HESAPLA", bg="orange", fg="white", 
+          command=lambda: messagebox.showinfo("Teknik Rapor", boru_hesapla())).pack(pady=20)
 
-tk.Button(root, text="WHATSAPP'A GONDER", bg="green", fg="white", 
-          font=("Arial", 12, "bold"), height=2, command=whatsapp_gonder).pack(pady=10)
+tk.Button(root, text="WHATSAPP GONDER", bg="green", fg="white", 
+          font=("Arial", 12, "bold"), height=2, command=whatsapp_gonder).pack(pady=5)
 
-# ALT IMZA
-tk.Label(root, text="\n" + "-"*40).pack()
-tk.Label(root, text="Software Developed by Ahmet Fikret Temeltas", font=("Arial", 9)).pack(pady=10)
+# IMZA
+tk.Label(root, text="\n" + "-"*35).pack()
+tk.Label(root, text="Software Developed by", font=("Arial", 8)).pack()
+tk.Label(root, text="Ahmet Fikret Temeltas", font=("Arial", 10, "bold")).pack()
 
 root.mainloop()
 
