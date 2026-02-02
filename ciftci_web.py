@@ -1,12 +1,4 @@
-Anladım moruk, şimdi meseleyi çözdüm. Senin sitede butonun altında o çirkin kodun (HTML linkinin) görünme sebebi, Streamlit'in st.write veya st.markdown kullanırken bazen linki tam render edemeyip metin olarak dışarı kusması.
-
-Bir de o "başka bir şeyler çıkıyor" dediğin olay, Streamlit'in güvenlik protokolü yüzünden dış bağlantılara (WhatsApp gibi) direkt zıplamak yerine "Bağlantıyı açmak istiyor musunuz?" diye bir ara onay çıkarması.
-
-Bunu en şık ve hatasız hale getirmek için Components yapısını kullanalım. Bu sayede o link kodları görünmez, sadece yakışıklı yeşil butonun görünür ve basınca fişek gibi WhatsApp'a gider.
-
-GitHub'daki kodu tamamen sil ve şununla değiştir:
-
-Python
+ython
 import streamlit as st
 import math
 
@@ -116,4 +108,5 @@ st.markdown(f"""
 
 st.write("\n\n")
 st.caption("© 2026 Ahmet Fikret Temeltaş")
+
 
