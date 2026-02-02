@@ -1,10 +1,3 @@
-Moruk, hata mesajındaki ython ibaresinden anladığım kadarıyla, kodu kopyalarken en başındaki "P" harfini dışarıda bırakmışsın veya dosyanın en başında görünmeyen bir karakter kalmış. ython diye bir komut olmadığı için sistem "Bu ne?" diyor.
-
-Ayrıca urllib kütüphanesini içeriye (import) eklemeyi unutmuş olabiliriz, bu da NameError verir.
-
-Hadi gel, şu işi kökten tertemiz çözelim. Aşağıdaki kodu olduğu gibi (hiçbir harf eksiltmeden) kopyala ve GitHub'daki her şeyi silip yerine bunu yapıştır:
-
-Python
 import streamlit as st
 import math
 import urllib.parse
@@ -133,5 +126,6 @@ st.markdown(f"""
 
 st.write("\n\n")
 st.caption("© 2026 Ahmet Fikret Temeltaş")
+
 
 
