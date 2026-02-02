@@ -1,85 +1,91 @@
 import streamlit as st
 
-# --- MÜHENDİSLİK VERİTABANI ---
-# Aralik: Lateral borular arası mesafe (metre)
-# Su İhtiyacı: mm/gün
+# --- TEKNİK VERİLER ---
 BITKI_VERILERI = {
-    "Mısır": {"aralik": 0.70, "su_ihtiyac": 8, "tip": "Damlama"},
-    "Pancar": {"aralik": 0.45, "su_ihtiyac": 7, "tip": "Damlama"},
-    "Ayçiçeği": {"aralik": 0.70, "su_ihtiyac": 6, "tip": "Damlama"},
-    "Yonca": {"aralik": 12, "su_ihtiyac": 9, "tip": "Yağmurlama"},
-    "Buğday": {"aralik": 12, "su_ihtiyac": 5, "tip": "Yağmurlama"}
+    "Mısır": {"aralik": 0.70, "su_ihtiyac": 8, "tip": "Damlama", "lateral_max": 100},
+    "Pancar": {"aralik": 0.45, "su_ihtiyac": 7, "tip": "Damlama", "lateral_max": 80},
+    "Ayçiçeği": {"aralik": 0.70, "su_ihtiyac": 6, "tip": "Damlama", "lateral_max": 100},
+    "Yonca": {"aralik": 12.0, "su_ihtiyac": 9, "tip": "Yağmurlama", "lateral_max": 150},
+    "Buğday": {"aralik": 12.0, "su_ihtiyac": 5, "tip": "Yağmurlama", "lateral_max": 150}
 }
 
-st.set_page_config(page_title="Ahmet Fikret Temeltaş - Mühendislik", layout="wide")
+st.set_page_config(page_title="Ahmet Fikret Temeltaş | Mühendislik", layout="wide")
 
-# --- BAŞLIK VE İMZA ---
-st.markdown("<h1 style='text-align: center; color: #2E7D32;'>SULAMA PROJE VE ANALİZ SİSTEMİ</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center;'><b>Software Developed by AHMET FİKRET TEMELTAŞ</b></p>", unsafe_allow_html=True)
+st.markdown(f"<h1 style='text-align: center; color: #1B5E20;'>AHMET FİKRET TEMELTAŞ</h1>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align: center; color: gray;'>PROJE VE SULAMA SİSTEMLERİ MÜHENDİSLİK HESABI</p>", unsafe_allow_html=True)
+
 st.write("---")
 
-# --- SOL PANEL: GİRİŞLER ---
+# --- GİRİŞ PANELİ ---
 with st.sidebar:
-    st.header("📍 Arazi Bilgileri")
+    st.header("📋 Arazi Bilgileri")
     isim = st.text_input("Çiftçi Ad Soyad")
     ilce = st.text_input("İlçe / Köy")
-    ada_parsel = st.text_input("Ada / Parsel No")
+    
+    st.header("📐 Tarla Ölçüleri (Metre)")
+    tarla_boyu = st.number_input("Ana Boru Hattı Boyu (m)", min_value=1.0, value=100.0)
+    tarla_eni = st.number_input("Sıraların Uzunluğu (m)", min_value=1.0, value=100.0)
     
     st.header("💧 Su Kaynağı")
-    debi = st.number_input("Su Debisi (Litre/Saniye)", value=20.0) # Senin 20 L/s sabitin
-    saatlik_ton = debi * 3.6 # L/s'den Ton/Saat'e çevrim
-    st.info(f"Kapasiteniz: {saatlik_ton:.1f} Ton/Saat")
+    debi = st.number_input("Su Debisi (L/s)", value=20.0)
+    ton_saat = debi * 3.6
 
-# --- ANA PANEL ---
-col1, col2 = st.columns(2)
+# --- HESAPLAMA MOTORU ---
+col1, col2 = st.columns([1, 1])
 
 with col1:
-    st.subheader("🌾 Ürün ve Alan")
+    st.subheader("⚙️ Sistem Seçimi")
+    sistem_turu = st.radio("Uygulanacak Sistem", ["Damlama Sulama", "Yağmurlama Sulama"])
     urun = st.selectbox("Ekilacak Ürün", list(BITKI_VERILERI.keys()))
-    alan = st.number_input("Tarla Alanı (Dönüm)", min_value=1.0, step=1.0)
     
-    st.subheader("📂 Belge Yükleme")
-    cks = st.file_uploader("ÇKS Belgesi", type=['pdf', 'jpg', 'png'])
-    tapu = st.file_uploader("Tapu / Kira Sözleşmesi", type=['pdf', 'jpg', 'png'])
-    ruhsat = st.file_uploader("Kuyu Ruhsatı", type=['pdf', 'jpg', 'png'])
+    st.subheader("📂 Evrak Yönetimi")
+    st.file_uploader("ÇKS / Tapu / Ruhsat Yükle", accept_multiple_files=True)
 
 with col2:
-    st.subheader("📏 Mühendislik Hesaplamaları")
-    if alan > 0:
-        v = BITKI_VERILERI[urun]
-        
-        # 1. BORU HESABI (Metraj)
-        # Formül: (1000 / Sıra Arası) * Alan (Dönüm)
-        if v["tip"] == "Damlama":
-            boru_metraj = (1000 / v["aralik"]) * alan
-            sonuc_ekipman = f"{boru_metraj:,.0f} Metre Damlama Borusu"
-        else:
-            # Yağmurlama için 12x12 dizilimde tabanca sayısı
-            tabanca_sayisi = (alan * 1000) / 144
-            sonuc_ekipman = f"{int(tabanca_sayisi)} Adet Yağmurlama Tabancası"
+    st.subheader("📊 Mühendislik Sonuçları")
+    
+    # MATEMATİKSEL ANALİZ
+    v = BITKI_VERILERI[urun]
+    alan_donum = (tarla_boyu * tarla_eni) / 1000
+    
+    if "Damlama" in sistem_turu:
+        # Tarla boyu boyunca kaç sıra lateral boru döşenecek?
+        sira_sayisi = tarla_boyu / v["aralik"]
+        # Toplam lateral boru = Sıra sayısı * Bir sıranın uzunluğu (tarla eni)
+        toplam_lateral = sira_sayisi * tarla_eni
+        ana_boru_capi = "110 mm" if ton_saat > 50 else "90 mm"
+        sonuc_metni = f"{toplam_lateral:,.0f} Metre Damlama Borusu"
+    else:
+        # Yağmurlama hesabı (12x12m standart dizilim)
+        tabanca_sayisi = (tarla_boyu * tarla_eni) / 144
+        ana_boru_capi = "125 mm" if ton_saat > 60 else "110 mm"
+        sonuc_metni = f"{int(tabanca_sayisi)} Adet Yağmurlama Tabancası"
 
-        # 2. SU İHTİYACI VE ZAMAN HESABI
-        gunluk_ihtiyac_ton = alan * v["su_ihtiyac"]
-        sulama_suresi = gunluk_ihtiyac_ton / saatlik_ton
+    gunluk_su = alan_donum * v["su_ihtiyac"]
+    sulama_suresi = gunluk_su / ton_saat
 
-        st.metric("Gereken Boru / Ekipman", sonuc_ekipman)
-        st.metric("Günlük Toplam Su İhtiyacı", f"{gunluk_ihtiyac_ton:.1f} Ton")
-        st.warning(f"🕒 Bu tarlayı günde **{sulama_suresi:.1f} saat** sulamanız gerekmektedir.")
-        
-        st.write("---")
-        # WhatsApp Mesajı Oluşturma
-        mesaj = (f"Sayın AHMET FİKRET TEMELTAŞ,\n\n"
-                 f"Ben {isim}. {ilce} bölgesindeki {alan} dönüm {urun} arazim için analiz yaptım.\n"
-                 f"Sonuç: {sonuc_ekipman} ihtiyacım var.\n"
-                 f"Günlük {gunluk_ihtiyac_ton} ton su gerekiyor. {debi} L/s su ile {sulama_suresi:.1f} saat sulama yapacağım.\n\n"
-                 f"Ada/Parsel: {ada_parsel}")
-        
-        whatsapp_url = f"https://wa.me/905075031990?text={mesaj.replace(' ', '%20').replace('\n', '%0A')}"
-        
-        if st.button("HESAPLAMALARI ONAYLA VE WHATSAPP'A GÖNDER"):
-            st.markdown(f'<a href="{whatsapp_url}" target="_blank" style="text-decoration: none; background-color: #25D366; color: white; padding: 10px 20px; border-radius: 5px;">WhatsApp Mesajını Başlat</a>', unsafe_allow_html=True)
+    # SONUÇ TABLOSU
+    st.info(f"📍 **Arazi Alanı:** {alan_donum:.2f} Dönüm")
+    st.success(f"📦 **Ana Boru İhtiyacı:** {tarla_boyu:.0f} Metre ({ana_boru_capi})")
+    st.success(f"🛠️ **Lateral/Ekipman:** {sonuc_metni}")
+    st.warning(f"🕒 **Sulama Süresi:** {sulama_suresi:.1f} Saat/Gün")
 
+# --- WHATSAPP GÖNDERİMİ ---
 st.write("---")
-st.caption("© 2026 - Tüm Hakları Saklıdır. Ahmet Fikret Temeltaş Mühendislik Çözümleri.")
+if st.button("PROJEYİ ONAYLA VE AHMET BEY'E GÖNDER"):
+    whatsapp_mesaj = (
+        f"Sayın AHMET FİKRET TEMELTAŞ,\n\n"
+        f"Ben {isim}. {ilce} bölgesindeki arazim için analiz yaptım.\n"
+        f"Tarla: {tarla_boyu}x{tarla_eni}m ({alan_donum:.2f} Dönüm)\n"
+        f"Ürün: {urun} | Sistem: {sistem_turu}\n"
+        f"Ana Boru: {tarla_boyu}m {ana_boru_capi}\n"
+        f"Lateral: {sonuc_metni}\n"
+        f"Sulama Süresi: {sulama_suresi:.1f} saat\n\n"
+        f"Software Developed by AHMET FİKRET TEMELTAŞ"
+    )
+    url = f"https://wa.me/905075031990?text={whatsapp_mesaj.replace(' ', '%20').replace('\n', '%0A')}"
+    st.markdown(f'<a href="{url}" target="_blank" style="background-color: #25D366; color: white; padding: 15px 30px; border-radius: 10px; text-decoration: none; font-weight: bold;">WhatsApp Mesajını Onayla</a>', unsafe_allow_html=True)
 
+st.write("\n\n")
+st.caption("© 2026 Ahmet Fikret Temeltaş - Akıllı Tarım Çözümleri")
 
