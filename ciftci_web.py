@@ -2,7 +2,7 @@ import streamlit as st
 import math
 import urllib.parse
 
-# --- BITKI VERİTABANI ---
+# --- BİTKİ VERİTABANI ---
 BITKI_VERILERI = {
     "Mısır": {"aralik": 0.70, "su_ihtiyac": 8, "tip": "Damlama"},
     "Pancar": {"aralik": 0.45, "su_ihtiyac": 7, "tip": "Damlama"},
@@ -11,121 +11,113 @@ BITKI_VERILERI = {
     "Buğday": {"aralik": 12.0, "su_ihtiyac": 5, "tip": "Yağmurlama"}
 }
 
-# Sayfa Ayarları
 st.set_page_config(page_title="Ahmet Fikret Temeltaş | Sulama", layout="wide")
 
-# Başlıklar
 st.markdown("<h1 style='text-align: center; color: #1B5E20;'>AHMET FİKRET TEMELTAŞ</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; font-weight: bold;'>PROFESYONEL SULAMA PROJELENDİRME SİSTEMİ</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; font-weight: bold;'>KOLAY SULAMA HESAPLAMA VE MALZEME LİSTESİ</p>", unsafe_allow_html=True)
 st.write("---")
 
-# --- 1. BÖLÜM: KİMLİK BİLGİLERİ ---
-st.subheader("👤 Müşteri ve Arazi Bilgileri")
+# --- 1. BÖLÜM: KİMLİK ---
+st.subheader("👤 Çiftçi ve Arazi Bilgileri")
 c1, c2, c3 = st.columns(3)
 with c1:
-    ad_soyad = st.text_input("Müşteri Ad Soyad", value="")
-    ilce = st.text_input("İlçe", value="")
+    ad_soyad = st.text_input("Adınız Soyadınız")
+    ilce = st.text_input("İlçe")
 with c2:
-    koy = st.text_input("Köy / Mahalle", value="")
-    ada = st.text_input("Ada No", value="")
+    koy = st.text_input("Köy / Mahalle")
+    ada = st.text_input("Ada No")
 with c3:
-    parsel = st.text_input("Parsel No", value="")
-    telefon = st.text_input("WhatsApp No (Örn: 905075031990)", value="905075031990")
+    parsel = st.text_input("Parsel No")
+    telefon = st.text_input("WhatsApp Numaranız", value="905075031990")
 
 st.write("---")
 
-# --- 2. BÖLÜM: TEKNİK VERİLER ---
-st.subheader("⚙️ Teknik Sistem Verileri")
+# --- 2. BÖLÜM: ANLAŞILIR GİRİŞLER ---
+st.subheader("🚜 Tarla Ölçüleri ve Su Durumu")
 t1, t2, t3 = st.columns(3)
 with t1:
-    sistem_turu = st.radio("Sistem Tipi", ["Damlama Sulama", "Yağmurlama Sulama"])
-    urun = st.selectbox("Ekilcek Ürün", list(BITKI_VERILERI.keys()))
+    sistem_turu = st.radio("Nasıl Sulayacaksınız?", ["Damlama (Hortumla)", "Yağmurlama (Tabancayla)"])
+    urun = st.selectbox("Ne Ekeceksiniz?", list(BITKI_VERILERI.keys()))
 with t2:
-    t_en = st.number_input("Sıra Uzunluğu (m)", value=200.0)
-    t_boy = st.number_input("Ana Boru Hattı (m)", value=300.0)
+    t_en = st.number_input("Hortum Serilecek Mesafe (Tarla Eni - m)", value=200.0, help="Damlama hortumlarının boyu kaç metre olacak?")
+    t_boy = st.number_input("Su Borusunun Gideceği Yol (Tarla Boyu - m)", value=300.0, help="Kuyudan tarlanın sonuna giden ana boru kaç metre?")
 with t3:
-    debi = st.number_input("Su Kaynağı Debisi (L/s)", value=20.0)
-    pn_sinifi = st.selectbox("Basınç Sınıfı", ["PN6", "PN10"])
+    debi = st.number_input("Saniyede Akan Su Miktarı (Litre/Saniye)", value=20.0, help="Kuyunuz saniyede kaç litre su veriyor?")
+    pn_sinifi = st.selectbox("Boru Dayanıklılığı (Basınç)", ["PN6 (Normal)", "PN10 (Yüksek Basınç)"])
 
-# --- MÜHENDİSLİK HESAPLARI ---
+# --- HESAPLAMA ---
 v = BITKI_VERILERI[urun]
 alan_donum = (t_en * t_boy) / 1000
-saatlik_ton = debi * 3.6
 
-# Ana Boru Çapı
 if debi <= 18: 
-    ana_cap = "90 mm"
+    ana_cap = "90'lık (90 mm)"
 elif debi <= 32: 
-    ana_cap = "110 mm"
+    ana_cap = "110'luk (110 mm)"
 else: 
-    ana_cap = "125 mm"
+    ana_cap = "125'lik (125 mm)"
 
-# Malzeme Metrajı
 if "Damlama" in sistem_turu:
     sira_sayisi = t_boy / v["aralik"]
     metraj = sira_sayisi * t_en
-    ekipman_adi = f"{metraj:,.0f} Metre Damlama Borusu"
-    ek_parca = f"{int(sira_sayisi)} Adet Conta ve Nipel"
-    filtre_tipi = "3\" Otomatik Disk Filtre Sistemi"
+    ekipman_adi = f"{metraj:,.0f} Metre Damlama Hortumu"
+    ek_parca = f"{int(sira_sayisi)} Takım Musluk, Conta ve Tapa"
+    filtre_notu = "Büyük Boy (3 inç) Pislik Tutucu Otomatik Filtre"
 else:
     tabanca_sayisi = (t_en * t_boy) / 144
-    ekipman_adi = f"{int(tabanca_sayisi)} Adet Yağmurlama Tabancası"
-    ek_parca = f"{int(t_boy/6)} Adet 6m Boru ve Abot"
-    filtre_tipi = "3\" Hidrosiklonlu Filtre Grubu"
+    ekipman_adi = f"{int(tabanca_sayisi)} Adet Sulama Tabancası"
+    ek_parca = f"{int(t_boy/6)} Adet Mandal boru ve Abot Takımı"
+    filtre_notu = "3 inç Kum Ayırıcı (Hidrosiklon) Filtre Seti"
 
-# --- ÖZET TABLO ---
-st.write("### 📋 Proje Özeti")
-o1, o2, o3 = st.columns(3)
-o1.metric("Toplam Alan", f"{alan_donum:.1f} Dönüm")
-o2.metric("Ana Boru", f"{ana_cap}")
-o3.metric("Filtre", "3 İnç")
+# --- SONUÇ PANELİ ---
+st.write("---")
+st.subheader("📋 Gereken Malzeme Listesi")
+res1, res2 = st.columns(2)
 
-# --- WHATSAPP MESAJ HAZIRLAMA ---
+with res1:
+    st.info(f"📍 **Arazi:** {alan_donum:.1f} Dönüm {urun} tarlası")
+    st.write(f"✅ **Ana Boru Hattı:** {t_boy} Metre {ana_cap} boru")
+    st.write(f"✅ **Sulama Boruları:** {ekipman_adi}")
+
+with res2:
+    st.success(f"✅ **Filtre Sistemi:** {filtre_notu}")
+    st.write(f"✅ **Bağlantı Parçaları:** {ek_parca}")
+    st.write(f"⚠️ **Not:** {pn_sinifi} boru kullanılması tavsiye edilir.")
+
+# --- WHATSAPP MESAJI ---
 msg = (
-    f"*SULAMA PROJESİ TEKNİK ŞARTNAMESİ*\n"
+    f"*SULAMA SİSTEMİ MALZEME LİSTESİ*\n"
     f"------------------------------------\n"
-    f"*Müşteri:* {ad_soyad}\n"
-    f"*Konum:* {ilce} / {koy}\n"
+    f"*Çiftçi:* {ad_soyad}\n"
+    f"*Yer:* {ilce} / {koy}\n"
     f"*Tapu:* Ada {ada} / Parsel {parsel}\n"
     f"------------------------------------\n"
-    f"*PROJE DETAYLARI:*\n"
-    f"- Alan: {alan_donum:.1f} Dönüm\n"
-    f"- Ürün: {urun}\n"
-    f"- Sistem: {sistem_turu}\n\n"
-    f"*MALZEME LİSTESİ:*\n"
+    f"*TARLA BİLGİSİ:*\n"
+    f"- Toplam Alan: {alan_donum:.1f} Dönüm\n"
+    f"- Ekilen Ürün: {urun}\n"
+    f"- Sulama Tipi: {sistem_turu}\n\n"
+    f"*ALINACAK MALZEMELER:*\n"
     f"- Ana Boru: {t_boy}m {ana_cap} {pn_sinifi}\n"
-    f"- Lateral: {ekipman_adi}\n"
-    f"- Filtre: {filtre_tipi}\n"
+    f"- Sulama Borusu: {ekipman_adi}\n"
+    f"- Filtre: {filtre_notu}\n"
     f"- Ek Parçalar: {ek_parca}\n"
     f"------------------------------------\n"
-    f"*Mühendis:* Ahmet Fikret Temeltaş"
+    f"Hazırlayan: Ahmet Fikret Temeltaş"
 )
 
-# URL Güvenliği için encode
 encoded_msg = urllib.parse.quote(msg)
 wa_link = f"https://wa.me/{telefon}?text={encoded_msg}"
 
-st.write("---")
-# Şık bir buton tasarımı
 st.markdown(f"""
-    <div style="display: flex; justify-content: center;">
+    <div style="display: flex; justify-content: center; margin-top: 20px;">
         <a href="{wa_link}" target="_blank" style="
-            background-color: #25D366;
-            color: white;
-            padding: 18px 50px;
-            text-decoration: none;
-            font-size: 20px;
-            font-weight: bold;
-            border-radius: 15px;
-            box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+            background-color: #25D366; color: white; padding: 20px 60px;
+            text-decoration: none; font-size: 22px; font-weight: bold;
+            border-radius: 15px; box-shadow: 0px 5px 15px rgba(0,0,0,0.3);
         ">
-            🚀 TEKNİK ŞARTNAMEYİ WHATSAPP'A GÖNDER
+            📩 LİSTEYİ WHATSAPP'TAN BİZE GÖNDER
         </a>
     </div>
     """, unsafe_allow_html=True)
 
 st.write("\n\n")
-st.caption("© 2026 Ahmet Fikret Temeltaş")
-
-
-
+st.caption("© 2026 Ahmet Fikret Temeltaş - Güvenilir Mühendislik")
