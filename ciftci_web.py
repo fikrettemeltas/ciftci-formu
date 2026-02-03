@@ -1,123 +1,110 @@
-import streamlit as st
-import math
-import urllib.parse
+import tkinter as tk
+from tkinter import messagebox
+import webbrowser
+from datetime import date
 
-# --- BİTKİ VERİTABANI ---
-BITKI_VERILERI = {
-    "Mısır": {"aralik": 0.70, "su_ihtiyac": 8, "tip": "Damlama"},
-    "Pancar": {"aralik": 0.45, "su_ihtiyac": 7, "tip": "Damlama"},
-    "Ayçiçeği": {"aralik": 0.70, "su_ihtiyac": 6, "tip": "Damlama"},
-    "Yonca": {"aralik": 12.0, "su_ihtiyac": 9, "tip": "Yağmurlama"},
-    "Buğday": {"aralik": 12.0, "su_ihtiyac": 5, "tip": "Yağmurlama"}
+# --- 1. MALZEME BİRİM FİYATLARI (Buradan Güncelleyebilirsin) ---
+BIRIM_FIYATLAR = {
+    "Damlama_Boru_Metre": 5.50,    # TL
+    "Yagmurlama_Tabanca": 950.0,   # TL
+    "Ana_Boru_110mm": 350.0,       # TL
+    "Filtre_Gubre_Sistemi": 18000  # TL (Paket)
 }
 
-st.set_page_config(page_title="Ahmet Fikret Temeltaş | Sulama", layout="wide")
+# --- 2. MÜHENDİSLİK VERİTABANI ---
+BITKI_VERILERI = {
+    "Mısır": {"aralik": 0.70, "tip": "Damlama"},
+    "Ayçiçeği": {"aralik": 0.70, "tip": "Damlama"},
+    "Pancar": {"aralik": 0.45, "tip": "Damlama"},
+    "Yonca": {"aralik": 12, "tip": "Yağmurlama"},
+    "Buğday": {"aralik": 12, "tip": "Yağmurlama"},
+    "Arpa": {"aralik": 12, "tip": "Yağmurlama"}
+}
 
-st.markdown("<h1 style='text-align: center; color: #1B5E20;'>AHMET FİKRET TEMELTAŞ</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; font-weight: bold;'>KOLAY SULAMA HESAPLAMA VE MALZEME LİSTESİ</p>", unsafe_allow_html=True)
-st.write("---")
+def teklif_olustur():
+    try:
+        alan = float(entry_alan.get())
+        urun = var_urun_liste.get()
+        v = BITKI_VERILERI[urun]
+        
+        # Malzeme Miktarı ve Maliyet Hesabı
+        if v["tip"] == "Damlama":
+            metraj = (1000 / v["aralik"]) * alan
+            malzeme_maliyet = metraj * BIRIM_FIYATLAR["Damlama_Boru_Metre"]
+            detay = f"{metraj:,.0f} Metre Damlama Borusu"
+        else:
+            adet = (alan * 1000) / 144
+            malzeme_maliyet = adet * BIRIM_FIYATLAR["Yagmurlama_Tabanca"]
+            detay = f"{adet:,.0f} Adet Yağmurlama Tabancası"
 
-# --- 1. BÖLÜM: KİMLİK ---
-st.subheader("👤 Çiftçi ve Arazi Bilgileri")
-c1, c2, c3 = st.columns(3)
-with c1:
-    ad_soyad = st.text_input("Adınız Soyadınız")
-    ilce = st.text_input("İlçe")
-with c2:
-    koy = st.text_input("Köy / Mahalle")
-    ada = st.text_input("Ada No")
-with c3:
-    parsel = st.text_input("Parsel No")
-    telefon = st.text_input("WhatsApp Numaranız", value="905075031990")
+        ana_boru_maliyet = (alan * 20) * BIRIM_FIYATLAR["Ana_Boru_110mm"]
+        toplam = malzeme_maliyet + ana_boru_maliyet + BIRIM_FIYATLAR["Filtre_Gubre_Sistemi"]
 
-st.write("---")
+        return detay, malzeme_maliyet, ana_boru_maliyet, toplam
+    except:
+        return None
 
-# --- 2. BÖLÜM: ANLAŞILIR GİRİŞLER ---
-st.subheader("🚜 Tarla Ölçüleri ve Su Durumu")
-t1, t2, t3 = st.columns(3)
-with t1:
-    sistem_turu = st.radio("Nasıl Sulayacaksınız?", ["Damlama (Hortumla)", "Yağmurlama (Tabancayla)"])
-    urun = st.selectbox("Ne Ekeceksiniz?", list(BITKI_VERILERI.keys()))
-with t2:
-    t_en = st.number_input("Hortum Serilecek Mesafe (Tarla Eni - m)", value=200.0, help="Damlama hortumlarının boyu kaç metre olacak?")
-    t_boy = st.number_input("Su Borusunun Gideceği Yol (Tarla Boyu - m)", value=300.0, help="Kuyudan tarlanın sonuna giden ana boru kaç metre?")
-with t3:
-    debi = st.number_input("Saniyede Akan Su Miktarı (Litre/Saniye)", value=20.0, help="Kuyunuz saniyede kaç litre su veriyor?")
-    pn_sinifi = st.selectbox("Boru Dayanıklılığı (Basınç)", ["PN6 (Normal)", "PN10 (Yüksek Basınç)"])
+def whatsapp_gonder():
+    veriler = teklif_olustur()
+    if not veriler:
+        messagebox.showerror("Hata", "Lütfen alan bilgisini sayı olarak girin!")
+        return
 
-# --- HESAPLAMA ---
-v = BITKI_VERILERI[urun]
-alan_donum = (t_en * t_boy) / 1000
+    detay, mat_mlyt, ana_mlyt, toplam = veriler
+    isim = entry_isim.get()
+    ilce = entry_ilce.get()
 
-if debi <= 18: 
-    ana_cap = "90'lık (90 mm)"
-elif debi <= 32: 
-    ana_cap = "110'luk (110 mm)"
-else: 
-    ana_cap = "125'lik (125 mm)"
+    mesaj = (
+        f"*SULAMA SİSTEMİ MALİYET TEKLİFİ*\\n"
+        f"---------------------------\\n"
+        f"👤 *Müşteri:* {isim if isim else 'Sayın Çiftçimiz'} / {ilce}\\n"
+        f"🌾 *Ürün:* {var_urun_liste.get()} ({entry_alan.get()} Dönüm)\\n"
+        f"---------------------------\\n"
+        f"📦 *Malzeme Listesi:*\\n"
+        f"• {detay}: {mat_mlyt:,.0f} TL\\n"
+        f"• Ana Boru Hattı: {ana_mlyt:,.0f} TL\\n"
+        f"• Filtre & Gübreleme: {BIRIM_FIYATLAR['Filtre_Gubre_Sistemi']:,} TL\\n"
+        f"💰 *TOPLAM:* {toplam:,.0f} TL\\n"
+        f"---------------------------\\n"
+        f"*Güneşle Gelen Bereket*\\n"
+        f"*Ahmet Fikret Temeltaş*\\n"
+        f"📞 0507 503 19 90"
+    )
+    
+    url = f"https://wa.me/905075031990?text={mesaj}"
+    webbrowser.open(url)
 
-if "Damlama" in sistem_turu:
-    sira_sayisi = t_boy / v["aralik"]
-    metraj = sira_sayisi * t_en
-    ekipman_adi = f"{metraj:,.0f} Metre Damlama Hortumu"
-    ek_parca = f"{int(sira_sayisi)} Takım Musluk, Conta ve Tapa"
-    filtre_notu = "Büyük Boy (3 inç) Pislik Tutucu Otomatik Filtre"
-else:
-    tabanca_sayisi = (t_en * t_boy) / 144
-    ekipman_adi = f"{int(tabanca_sayisi)} Adet Sulama Tabancası"
-    ek_parca = f"{int(t_boy/6)} Adet Mandal boru ve Abot Takımı"
-    filtre_notu = "3 inç Kum Ayırıcı (Hidrosiklon) Filtre Seti"
+# --- ARAYÜZ ---
+root = tk.Tk()
+root.title("Ahmet Fikret Temeltaş - Sulama Proje")
+root.geometry("400x700")
 
-# --- SONUÇ PANELİ ---
-st.write("---")
-st.subheader("📋 Gereken Malzeme Listesi")
-res1, res2 = st.columns(2)
+tk.Label(root, text="SULAMA MALİYET HESAPLAYICI", font=("Arial", 12, "bold"), fg="#1B5E20").pack(pady=10)
+tk.Label(root, text="\"Toprağınız Suya, Cebiniz Rahata Kavuşsun\"", font=("Arial", 9, "italic")).pack()
 
-with res1:
-    st.info(f"📍 **Arazi:** {alan_donum:.1f} Dönüm {urun} tarlası")
-    st.write(f"✅ **Ana Boru Hattı:** {t_boy} Metre {ana_cap} boru")
-    st.write(f"✅ **Sulama Boruları:** {ekipman_adi}")
+# Giriş Alanları
+tk.Label(root, text="\nÇiftçi Adı:").pack()
+entry_isim = tk.Entry(root, width=35); entry_isim.pack()
 
-with res2:
-    st.success(f"✅ **Filtre Sistemi:** {filtre_notu}")
-    st.write(f"✅ **Bağlantı Parçaları:** {ek_parca}")
-    st.write(f"⚠️ **Not:** {pn_sinifi} boru kullanılması tavsiye edilir.")
+tk.Label(root, text="İlçe / Köy:").pack()
+entry_ilce = tk.Entry(root, width=35); entry_ilce.pack()
 
-# --- WHATSAPP MESAJI ---
-msg = (
-    f"*SULAMA SİSTEMİ MALZEME LİSTESİ*\n"
-    f"------------------------------------\n"
-    f"*Çiftçi:* {ad_soyad}\n"
-    f"*Yer:* {ilce} / {koy}\n"
-    f"*Tapu:* Ada {ada} / Parsel {parsel}\n"
-    f"------------------------------------\n"
-    f"*TARLA BİLGİSİ:*\n"
-    f"- Toplam Alan: {alan_donum:.1f} Dönüm\n"
-    f"- Ekilen Ürün: {urun}\n"
-    f"- Sulama Tipi: {sistem_turu}\n\n"
-    f"*ALINACAK MALZEMELER:*\n"
-    f"- Ana Boru: {t_boy}m {ana_cap} {pn_sinifi}\n"
-    f"- Sulama Borusu: {ekipman_adi}\n"
-    f"- Filtre: {filtre_notu}\n"
-    f"- Ek Parçalar: {ek_parca}\n"
-    f"------------------------------------\n"
-    f"Hazırlayan: Ahmet Fikret Temeltaş"
-)
+tk.Label(root, text="Tarla Alanı (Dönüm):").pack()
+entry_alan = tk.Entry(root, width=15); entry_alan.pack()
 
-encoded_msg = urllib.parse.quote(msg)
-wa_link = f"https://wa.me/{telefon}?text={encoded_msg}"
+tk.Label(root, text="\nÜrün Seçimi:").pack()
+var_urun_liste = tk.StringVar(root); var_urun_liste.set("Mısır")
+tk.OptionMenu(root, var_urun_liste, *BITKI_VERILERI.keys()).pack()
 
-st.markdown(f"""
-    <div style="display: flex; justify-content: center; margin-top: 20px;">
-        <a href="{wa_link}" target="_blank" style="
-            background-color: #25D366; color: white; padding: 20px 60px;
-            text-decoration: none; font-size: 22px; font-weight: bold;
-            border-radius: 15px; box-shadow: 0px 5px 15px rgba(0,0,0,0.3);
-        ">
-            📩 LİSTEYİ WHATSAPP'TAN BİZE GÖNDER
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
+# Butonlar
+tk.Button(root, text="MALZEME VE FİYAT LİSTESİ OLUŞTUR", bg="#2E7D32", fg="white", 
+          font=("Arial", 10, "bold"), command=lambda: messagebox.showinfo("Teklif Özeti", 
+          f"Tahmini Toplam Maliyet: {teklif_olustur()[3]:,.0f} TL" if teklif_olustur() else "Hata!")).pack(pady=20)
 
-st.write("\n\n")
-st.caption("© 2026 Ahmet Fikret Temeltaş - Güvenilir Mühendislik")
+tk.Button(root, text="TEKLİFİ WHATSAPP'A GÖNDER", bg="#25D366", fg="white", 
+          font=("Arial", 10, "bold"), command=whatsapp_gonder).pack(pady=5)
+
+# Alt Bilgi
+tk.Label(root, text=f"\n{date.today().strftime('%d.%m.%Y')}\nAhmet Fikret Temeltaş\n0507 503 19 90").pack()
+
+root.mainloop()
