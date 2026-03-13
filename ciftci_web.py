@@ -108,3 +108,4 @@ tk.Button(root, text="TEKLİFİ WHATSAPP'A GÖNDER", bg="#25D366", fg="white",
 tk.Label(root, text=f"\n{date.today().strftime('%d.%m.%Y')}\nAhmet Fikret Temeltaş\n0507 503 19 90").pack()
 
 root.mainloop()
+
